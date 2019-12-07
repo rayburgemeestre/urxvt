@@ -1649,7 +1649,7 @@ rxvt_term::x_cb (XEvent &ev)
                                       ev.xbutton.state & Button3Mask ? 2 : 0);
 
 #ifdef SELECTION_SCROLLING
-                    if (ev.xbutton.y < int_bwidth
+                    if (ev.xbutton.y < int_bwidth_tb
                         || Pixel2Row (ev.xbutton.y) > (nrow-1))
                       {
                         page_dirn scroll_selection_dir;
@@ -1669,15 +1669,15 @@ rxvt_term::x_cb (XEvent &ev)
                         selection_save_state = (ev.xbutton.state & Button3Mask) ? 2 : 0;
 
                         /* calc number of lines to scroll */
-                        if (ev.xbutton.y < int_bwidth)
+                        if (ev.xbutton.y < int_bwidth_tb)
                           {
                             scroll_selection_dir = UP;
-                            dist = int_bwidth - ev.xbutton.y;
+                            dist = int_bwidth_tb - ev.xbutton.y;
                           }
                         else
                           {
                             scroll_selection_dir = DN;
-                            dist = ev.xbutton.y - (int_bwidth + vt_height);
+                            dist = ev.xbutton.y - (int_bwidth_tb + vt_height);
                           }
 
                         scroll_selection_lines = Pixel2Height (dist)
@@ -3474,6 +3474,32 @@ rxvt_term::process_xterm_seq (int op, char *str, char resp)
       case URxvt_Color_border:
         process_color_seq (op, Color_border, str, resp);
         break;
+      case URxvt_Margin_border:
+      {
+        const auto update = [&](auto& int_bwidth, const auto& str){
+          if (*str == '+')
+            int_bwidth += atoi(str);
+          else if (*str == '-')
+            int_bwidth -= atoi(str + 1);
+          else
+            int_bwidth = atoi(str);
+        };
+        // Format of str is: "<left_right_margin>" | "<left_right_margin> <top_bottom_margin>".
+        // Margin is a number, and can be prefixed with "-" or "+" to make it relative as,
+        //  opposed to absolute.
+        // Some examples: "+123", "+123 -10", "500 10".
+        char *token = strtok(str, " ");
+        if (token != NULL)
+          update(int_bwidth, token);
+        token = strtok(NULL, " ");
+        if (token != NULL)
+          update(int_bwidth_tb, token);
+        // Make sure the margin text isn't really going to be interpreted as a color
+        *str = '\0';
+        // Force redraw
+        resize_all_windows (0, 0, 0);
+        break;
+      }
 
 #if BG_IMAGE_FROM_ROOT
       case URxvt_Color_tint:
